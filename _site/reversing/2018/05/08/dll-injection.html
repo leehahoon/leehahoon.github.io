@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>    
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width initial-scale=1">
+
+  <title>DLL Injection</title>
+  <meta name="description" content="DLL?DLL(Dynamic Link Library)는 마이크로소프트 윈도우에서 구현된 동적 링크 라이브러리다. 내부에는 다른 프로그램이 불러서 쓸 수 있는 코드와 데이터, 다양한 함수들을 포함하고 있다. DLL을 사용하면 효율적으로 코드를 모듈화하고 재사용할 수 있으며, 메모리 ...">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="http://localhost:4000/reversing/2018/05/08/dll-injection.html">
+  <link rel="alternate" type="application/atom+xml" title="Jaehoon's BLOG" href="http://localhost:4000/feed.xml" />
+  <script src="/scripts/jquery-1.11.2.min.js"></script>
+  <script src="/scripts/pithy.js"></script>
+</head>
+
+
+  <body>
+    <header class="header">
+	<div class="header-container">
+		<div class="nav">
+			
+				<li>
+					<a href="/index.html">home</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/archive.html">archive</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/category.html">category</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/about.html">about</a>
+				</li>			
+			
+		</div>
+		<div class="description"> Your motto </div>		
+		<ul class="social-links">
+			<li>
+				<a href="https://github.com/leehahoon" title="Github">
+					<img width="19px" height="19px" src="/images/github.png"/>
+				</a>
+			</li>
+			<li>
+				<a href="/feed.xml" title="RSS">
+					<img width="19px" height="19px" src="/images/rss.png"/>
+				</a>
+			</li>
+			<li>
+				<a href="https://twitter.com/jekyllrb" title="Twitter">
+					<img width="19px" height="19px" src="/images/twitter.png"/>
+				</a>
+			</li>
+		</ul>		
+	</div>
+</header>
+
+    <br>
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+  <br>
+  <header class="post-header">
+    <h1 class="post-title">DLL Injection</h1>
+    <p class="post-meta">May 8, 2018</p>
+  </header>
+
+  <article class="post-content">
+    <h3 id="dll">DLL?</h3>
+<p><a href="https://support.microsoft.com/ko-kr/help/815065/what-is-a-dll">DLL(Dynamic Link Library)</a>는 마이크로소프트 윈도우에서 구현된 동적 링크 라이브러리다. 내부에는 다른 프로그램이 불러서 쓸 수 있는 코드와 데이터, 다양한 함수들을 포함하고 있다. DLL을 사용하면 효율적으로 코드를 모듈화하고 재사용할 수 있으며, 메모리 사용 효율성을 높이고 사용되는 디스크 공간을 줄일 수 있다. 따라서 운영 체제와 프로그램이 더 빠르게 로드 및 실행된다.
+DLL의 이점은 다음과 같다.</p>
+<ul>
+  <li>더 적은 리소스 사용</li>
+  <li>모듈식 아키텍쳐 활용</li>
+  <li>손쉬운 배포와 설치</li>
+</ul>
+
+<h3 id="dll-injection">DLL Injection?</h3>
+<p>다른 프로세스에 특정 DLL 파일을 강제로 삽입하는 행위를 의미한다. 이를 통해 다른 프로세스의 주소 공간 내에서 DLL을 강제로 로드시킴으로써 코드를 실행시킬 수 있다. 일반적인 DLL Loading과는 다르게 대상이 자신의 프로세스가 아닌 다른 프로세스에 로딩한다.</p>
+
+<h3 id="구현-방법">구현 방법</h3>
+<h4 id="createremotethread">CreateRemoteThread</h4>
+
+<p>코드의 실행 흐름을 정리하면 다음과 같다.</p>
+<ol>
+  <li>dwPID를 통해 대상 프로세스의 핸들을 구함, OpenProcess()</li>
+  <li>대상 프로세스 메모리에 szDLLName 크기만큼 메모리 할당, VirtualAllocEx()</li>
+  <li>할당 받은 메모리에 DLL 경로 씀, WriteProcessMemory()</li>
+  <li>LoadLibraryA() API 주소 구함, GetModuleHandle(), GetProcessAddress()</li>
+  <li>대상 프로세스에 스레드 실행, CreateRemoteThread()</li>
+</ol>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include "stdafx.h"
+#include "stdio.h"
+#include "windows.h"
+#include "tlhelp32.h"
+</span>
+<span class="cp">#define DEF_PROC_NAME (PROGRAM_NAME)
+#define DEF_DLL_PATH  (DLL_PATH)
+</span>
+<span class="n">DWORD</span> <span class="n">FindProcessID</span><span class="p">(</span><span class="n">LPCTSTR</span> <span class="n">szProcessName</span><span class="p">);</span>
+<span class="n">BOOL</span> <span class="n">InjectDll</span><span class="p">(</span><span class="n">DWORD</span> <span class="n">dwPID</span><span class="p">,</span> <span class="n">LPCTSTR</span> <span class="n">szDllName</span><span class="p">);</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+  <span class="n">DWORD</span> <span class="n">dwPID</span> <span class="o">=</span> <span class="mh">0xFFFFFFFF</span><span class="p">;</span>
+
+  <span class="c1">// find process</span>
+  <span class="n">dwPID</span> <span class="o">=</span> <span class="n">FindProcessID</span><span class="p">(</span><span class="n">DEF_PROC_NAME</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">dwPID</span> <span class="o">==</span> <span class="mh">0xFFFFFFFF</span><span class="p">)</span>
+  <span class="p">{</span>
+    <span class="n">printf</span><span class="p">(</span><span class="s">"There is no &lt;%s&gt; process!</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">DEF_PROC_NAME</span><span class="p">);</span>
+    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="c1">// inject dll</span>
+  <span class="n">InjectDll</span><span class="p">(</span><span class="n">dwPID</span><span class="p">,</span> <span class="n">DEF_DLL_PATH</span><span class="p">);</span>
+
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">DWORD</span> <span class="nf">FindProcessID</span><span class="p">(</span><span class="n">LPCTSTR</span> <span class="n">szProcessName</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">DWORD</span> <span class="n">dwPID</span> <span class="o">=</span> <span class="mh">0xFFFFFFFF</span><span class="p">;</span>
+  <span class="n">HANDLE</span> <span class="n">hSnapShot</span> <span class="o">=</span> <span class="n">INVALID_HANDLE_VALUE</span><span class="p">;</span>
+  <span class="n">PROCESSENTRY32</span> <span class="n">pe</span><span class="p">;</span>
+
+  <span class="c1">// Get the snapshot of the system</span>
+  <span class="n">pe</span><span class="p">.</span><span class="n">dwSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">PROCESSENTRY32</span><span class="p">);</span>
+  <span class="n">hSnapShot</span> <span class="o">=</span> <span class="n">CreateToolhelp32Snapshot</span><span class="p">(</span><span class="n">TH32CS_SNAPALL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span> 
+
+  <span class="n">Process32First</span><span class="p">(</span><span class="n">hSnapShot</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">pe</span><span class="p">);</span>
+  <span class="k">do</span>
+  <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">_stricmp</span><span class="p">(</span><span class="n">szProcessName</span><span class="p">,</span> <span class="n">pe</span><span class="p">.</span><span class="n">szExeFile</span><span class="p">))</span>
+    <span class="p">{</span>
+      <span class="n">dwPID</span> <span class="o">=</span> <span class="n">pe</span><span class="p">.</span><span class="n">th32ProcessID</span><span class="p">;</span>
+      <span class="k">break</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="n">Process32Next</span><span class="p">(</span><span class="n">hSnapShot</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">pe</span><span class="p">));</span>
+
+  <span class="n">CloseHandle</span><span class="p">(</span><span class="n">hSnapShot</span><span class="p">);</span>
+
+  <span class="k">return</span> <span class="n">dwPID</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">BOOL</span> <span class="nf">InjectDll</span><span class="p">(</span><span class="n">DWORD</span> <span class="n">dwPID</span><span class="p">,</span> <span class="n">LPCTSTR</span> <span class="n">szDllName</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">HANDLE</span> <span class="n">hProcess</span><span class="p">,</span> <span class="n">hThread</span><span class="p">;</span>
+  <span class="n">LPVOID</span> <span class="n">pRemoteBuf</span><span class="p">;</span>
+  <span class="n">DWORD</span> <span class="n">dwBufSize</span> <span class="o">=</span> <span class="n">lstrlen</span><span class="p">(</span><span class="n">szDllName</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="n">LPTHREAD_START_ROUTINE</span> <span class="n">pThreadProc</span><span class="p">;</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">hProcess</span> <span class="o">=</span> <span class="n">OpenProcess</span><span class="p">(</span><span class="n">PROCESS_ALL_ACCESS</span><span class="p">,</span> <span class="n">FALSE</span><span class="p">,</span> <span class="n">dwPID</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">FALSE</span><span class="p">;</span>
+
+  <span class="n">pRemoteBuf</span> <span class="o">=</span> <span class="n">VirtualAllocEx</span><span class="p">(</span><span class="n">hProcess</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">dwBufSize</span><span class="p">,</span> <span class="n">MEM_COMMIT</span><span class="p">,</span> <span class="n">PAGE_READWRITE</span><span class="p">);</span>
+
+  <span class="n">WriteProcessMemory</span><span class="p">(</span><span class="n">hProcess</span><span class="p">,</span> <span class="n">pRemoteBuf</span><span class="p">,</span> <span class="p">(</span><span class="n">LPVOID</span><span class="p">)</span><span class="n">szDllName</span><span class="p">,</span> <span class="n">dwBufSize</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+
+  <span class="n">pThreadProc</span> <span class="o">=</span> <span class="p">(</span><span class="n">LPTHREAD_START_ROUTINE</span><span class="p">)</span><span class="n">GetProcAddress</span><span class="p">(</span><span class="n">GetModuleHandle</span><span class="p">(</span><span class="s">"kernel32.dll"</span><span class="p">),</span> <span class="s">"LoadLibraryA"</span><span class="p">);</span>
+  <span class="n">hThread</span> <span class="o">=</span> <span class="n">CreateRemoteThread</span><span class="p">(</span><span class="n">hProcess</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pThreadProc</span><span class="p">,</span> <span class="n">pRemoteBuf</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+  <span class="n">WaitForSingleObject</span><span class="p">(</span><span class="n">hThread</span><span class="p">,</span> <span class="n">INFINITE</span><span class="p">);</span>
+
+  <span class="n">CloseHandle</span><span class="p">(</span><span class="n">hThread</span><span class="p">);</span>
+  <span class="n">CloseHandle</span><span class="p">(</span><span class="n">hProcess</span><span class="p">);</span>
+
+  <span class="k">return</span> <span class="n">TRUE</span><span class="p">;</span>
+<span class="p">}</span>
+
+</code></pre></div></div>
+
+<blockquote>
+  <p>코드출처: 리버스코어 (ReverseCore)</p>
+</blockquote>
+
+<p>FindProcessID()에서 <a href="https://msdn.microsoft.com/ko-kr/library/windows/desktop/ms682489(v=vs.85).aspx">CreateToolhelp32Snapshot()</a>를 이용해 찾고자하는 프로세스의 PID를 구한다. InjectDLL()에선 구한 PID를 통해 해당 프로세스의 핸들을 구한다. 이후, 대상 프로세스에 삽입할 DLL 경로를 쓰기 위해 메모리 공간을 할당하고 그 공간에 쓴다. 그리고 DLL을 로드하기 위해 <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/ms684175(v=vs.85).aspx">LoadLibraryA()</a>의 주소를 구하고 <a href="https://msdn.microsoft.com/ko-kr/library/windows/desktop/ms682437(v=vs.85).aspx">CreateRemoteThread()</a>를 이용해 이를 실행한다. 이를 통해 DLL를 원하는 프로세스에 삽입할 수 있다.</p>
+
+<p>실습에 사용된 DLL의 코드는 다음과 같다.</p>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include "stdio.h"
+#include "windows.h"
+</span>
+<span class="n">BOOL</span> <span class="n">WINAPI</span> <span class="nf">DllMain</span><span class="p">(</span><span class="n">HINSTANCE</span> <span class="n">hinstDLL</span><span class="p">,</span> <span class="n">DWORD</span> <span class="n">fdwReason</span><span class="p">,</span> <span class="n">LPVOID</span> <span class="n">lpvReserved</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">HANDLE</span> <span class="n">hThread</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+
+  <span class="k">switch</span> <span class="p">(</span><span class="n">fdwReason</span><span class="p">)</span>
+  <span class="p">{</span>
+  <span class="k">case</span> <span class="n">DLL_PROCESS_ATTACH</span><span class="p">:</span>
+    <span class="n">CloseHandle</span><span class="p">(</span><span class="n">hThread</span><span class="p">);</span>
+    <span class="n">MessageBox</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span> <span class="s">"This is DLL Injection Test!"</span><span class="p">,</span> <span class="s">"LEEHAHOON"</span><span class="p">,</span> <span class="n">MB_OK</span><span class="p">);</span>
+    <span class="k">break</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">return</span> <span class="n">TRUE</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><img src="/img/dll-injection/dll_inject1.png" alt="dll_inject1" /></p>
+
+<h4 id="registry-appinit_dlls">Registry AppInit_DLLs</h4>
+<p>윈도우 운영체제에는 레지스트리라고 불리는 데이터베이스가 존재한다. 이 DB에는 하드웨어, 소프트웨어에 관한 설정, 선택항목뿐만 아니라 사용자 PC에 대한 정보도 들어있다. 이를 사용하기 전에는 구성 설정을 담는데에 INI 파일을 이용했지만 찾기 쉽지 않아서 레지스트리를 도입했다.
+여러 레지스트리 중 DLL Injection에 사용될 키는 AppInit_DLLs 이다. 위치는 “HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows\AppInit_DLLs”에 존재한다.</p>
+
+<p><img src="/img/dll-injection/dll_injection2.png" alt="dll_inject2" /></p>
+
+<p>AppInit_DLLs를 이용한 DLL Injection은 실행되는 모든 프로세스에 레지스트리에 적힌 DLL을 로드하므로 조심해서 사용해야 한다.</p>
+
+<h4 id="dll-injection-with-user-apc">DLL Injection with User APC</h4>
+<p>일반적으로 DLL Injection을 수행할때에는 위에서 이야기한 CreateRemoteThread()를 이용한 방법이 보편적이다. 이 방법은 간단하면서도 신뢰할 수 있지만 몇 가지 단점이 존재한다. 대상 프로세스를 OpenProcess로 핸들을 구할 때, 광범위한 Access 권한을 요구한다. 또한 많은 안티 디버깅 도구들은 CreateRemoteThread()를 관찰하기 때문에 쉽게 탐지 당할 수 있다.
+DLL Injection을 수행하는 또 다른 방법은 바로 APC를 이용하는 것이다. APC는 Asynchronous Procedure Call의 약자로 해석하면 비동기 프로시저 호출이란 의미이다. <a href="https://msdn.microsoft.com/ko-kr/library/windows/desktop/ms684954(v=vs.85).aspx">QueueUserAPC()</a>를 사용하여 대상 프로세스에서 실행중인 모든 스레드를 연결하여 DLL을 로드하도록 수행하면 우리가 원하는 DLL Injection을 할 수 있다. 이를 통해 안티 디버깅 도구들을 우회하고 적은 권한만으로도 DLL Injection을 할 수 있다. 하지만 QueueUserAPC()를 호출했다고 해서 곧바로 사용자가 지정한 thread가 수행되는 것이 아닌, alertable 상태가 될 때 호출된다. 이는  SleepEx(), WaitForSingleObjectEx(), WaitForMultipleObjectsEx(), MsgWaitForMultipleObjectsEx()와 같은 함수를 사용하면 alertable 상태가 되어 스레드를 사용자가 조정할 수 있게 된다.</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include "stdafx.h"
+#include "stdio.h"
+#include "windows.h"
+#include "tlhelp32.h"
+#include &lt;vector&gt;
+</span>
+<span class="cp">#define DEF_PROC_NAME (PROGRAM_NAME)
+#define DEF_DLL_PATH  (DLL_PATH)
+</span>
+<span class="n">using</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="p">;</span>
+
+<span class="n">DWORD</span> <span class="n">FindProcessID</span><span class="p">(</span><span class="n">LPCTSTR</span> <span class="n">szProcessName</span><span class="p">,</span> <span class="n">vector</span><span class="o">&lt;</span><span class="n">DWORD</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">tids</span><span class="p">);</span>
+<span class="n">BOOL</span> <span class="n">InjectDll</span><span class="p">(</span><span class="n">DWORD</span> <span class="n">dwPID</span><span class="p">,</span> <span class="n">LPCTSTR</span> <span class="n">szDllName</span><span class="p">,</span> <span class="n">vector</span><span class="o">&lt;</span><span class="n">DWORD</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">tids</span><span class="p">);</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+  <span class="n">DWORD</span> <span class="n">dwPID</span> <span class="o">=</span> <span class="mh">0xFFFFFFFF</span><span class="p">;</span>
+  <span class="n">vector</span><span class="o">&lt;</span><span class="n">DWORD</span><span class="o">&gt;</span> <span class="n">tids</span><span class="p">;</span>
+
+  <span class="c1">// find process</span>
+  <span class="n">dwPID</span> <span class="o">=</span> <span class="n">FindProcessID</span><span class="p">(</span><span class="n">DEF_PROC_NAME</span><span class="p">,</span> <span class="n">tids</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">dwPID</span> <span class="o">==</span> <span class="mh">0xFFFFFFFF</span><span class="p">)</span>
+  <span class="p">{</span>
+    <span class="n">printf</span><span class="p">(</span><span class="s">"There is no &lt;%s&gt; process!</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">DEF_PROC_NAME</span><span class="p">);</span>
+    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="c1">// inject dll</span>
+  <span class="n">InjectDll</span><span class="p">(</span><span class="n">dwPID</span><span class="p">,</span> <span class="n">DEF_DLL_PATH</span><span class="p">,</span> <span class="n">tids</span><span class="p">);</span>
+
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">DWORD</span> <span class="nf">FindProcessID</span><span class="p">(</span><span class="n">LPCTSTR</span> <span class="n">szProcessName</span><span class="p">,</span> <span class="n">vector</span><span class="o">&lt;</span><span class="n">DWORD</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">tids</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">DWORD</span> <span class="n">dwPID</span> <span class="o">=</span> <span class="mh">0xFFFFFFFF</span><span class="p">;</span>
+  <span class="n">HANDLE</span> <span class="n">hSnapShot</span> <span class="o">=</span> <span class="n">INVALID_HANDLE_VALUE</span><span class="p">;</span>
+  <span class="n">PROCESSENTRY32</span> <span class="n">pe</span><span class="p">;</span>
+  <span class="n">THREADENTRY32</span> <span class="n">te</span><span class="p">;</span>
+
+  <span class="c1">// Get the snapshot of the system</span>
+  <span class="n">pe</span><span class="p">.</span><span class="n">dwSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">PROCESSENTRY32</span><span class="p">);</span> <span class="c1">// 296d (128h)</span>
+  <span class="n">te</span><span class="p">.</span><span class="n">dwSize</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">THREADENTRY32</span><span class="p">);</span>
+  <span class="n">hSnapShot</span> <span class="o">=</span> <span class="n">CreateToolhelp32Snapshot</span><span class="p">(</span><span class="n">TH32CS_SNAPALL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span> <span class="c1">// ProcessID = 0</span>
+
+                                <span class="c1">// find process</span>
+  <span class="n">Process32First</span><span class="p">(</span><span class="n">hSnapShot</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">pe</span><span class="p">);</span>
+  <span class="k">do</span>
+  <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">_stricmp</span><span class="p">(</span><span class="n">szProcessName</span><span class="p">,</span> <span class="n">pe</span><span class="p">.</span><span class="n">szExeFile</span><span class="p">))</span>
+    <span class="p">{</span>
+      <span class="n">dwPID</span> <span class="o">=</span> <span class="n">pe</span><span class="p">.</span><span class="n">th32ProcessID</span><span class="p">;</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">Thread32First</span><span class="p">(</span><span class="n">hSnapShot</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">te</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">do</span> <span class="p">{</span>
+          <span class="k">if</span> <span class="p">(</span><span class="n">te</span><span class="p">.</span><span class="n">th32OwnerProcessID</span> <span class="o">==</span> <span class="n">dwPID</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">tids</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">te</span><span class="p">.</span><span class="n">th32ThreadID</span><span class="p">);</span>
+            <span class="n">printf</span><span class="p">(</span><span class="s">"%d</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">te</span><span class="p">.</span><span class="n">th32ThreadID</span><span class="p">);</span>
+          <span class="p">}</span>
+        <span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="n">Thread32Next</span><span class="p">(</span><span class="n">hSnapShot</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">te</span><span class="p">));</span>
+      <span class="p">}</span>
+      <span class="k">break</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="n">Process32Next</span><span class="p">(</span><span class="n">hSnapShot</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">pe</span><span class="p">));</span>
+
+  <span class="n">CloseHandle</span><span class="p">(</span><span class="n">hSnapShot</span><span class="p">);</span>
+
+  <span class="n">printf</span><span class="p">(</span><span class="s">"%d</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">dwPID</span><span class="p">);</span>
+
+  <span class="k">return</span> <span class="n">dwPID</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">BOOL</span> <span class="nf">InjectDll</span><span class="p">(</span><span class="n">DWORD</span> <span class="n">dwPID</span><span class="p">,</span> <span class="n">LPCTSTR</span> <span class="n">szDllName</span><span class="p">,</span> <span class="n">vector</span><span class="o">&lt;</span><span class="n">DWORD</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">tids</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">HANDLE</span> <span class="n">hProcess</span><span class="p">,</span> <span class="n">hThread</span><span class="p">;</span>
+  <span class="n">LPVOID</span> <span class="n">pRemoteBuf</span><span class="p">;</span>
+  <span class="n">DWORD</span> <span class="n">dwBufSize</span> <span class="o">=</span> <span class="n">lstrlen</span><span class="p">(</span><span class="n">szDllName</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="n">LPTHREAD_START_ROUTINE</span> <span class="n">pThreadProc</span><span class="p">;</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">hProcess</span> <span class="o">=</span> <span class="n">OpenProcess</span><span class="p">(</span><span class="n">PROCESS_VM_WRITE</span> <span class="o">|</span> <span class="n">PROCESS_VM_OPERATION</span><span class="p">,</span> <span class="n">FALSE</span><span class="p">,</span> <span class="n">dwPID</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">FALSE</span><span class="p">;</span>
+
+  <span class="n">pRemoteBuf</span> <span class="o">=</span> <span class="n">VirtualAllocEx</span><span class="p">(</span><span class="n">hProcess</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">dwBufSize</span><span class="p">,</span> <span class="n">MEM_COMMIT</span><span class="p">,</span> <span class="n">PAGE_READWRITE</span><span class="p">);</span>
+
+  <span class="n">WriteProcessMemory</span><span class="p">(</span><span class="n">hProcess</span><span class="p">,</span> <span class="n">pRemoteBuf</span><span class="p">,</span> <span class="p">(</span><span class="n">LPVOID</span><span class="p">)</span><span class="n">szDllName</span><span class="p">,</span> <span class="n">dwBufSize</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+
+  <span class="n">pThreadProc</span> <span class="o">=</span> <span class="p">(</span><span class="n">LPTHREAD_START_ROUTINE</span><span class="p">)</span><span class="n">GetProcAddress</span><span class="p">(</span><span class="n">GetModuleHandle</span><span class="p">(</span><span class="s">"kernel32.dll"</span><span class="p">),</span> <span class="s">"LoadLibraryA"</span><span class="p">);</span>
+  <span class="c1">//hThread = CreateRemoteThread(hProcess, NULL, 0, pThreadProc, pRemoteBuf, 0, NULL);</span>
+  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">tids</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">hThread</span> <span class="o">=</span> <span class="n">OpenThread</span><span class="p">(</span><span class="n">THREAD_SET_CONTEXT</span><span class="p">,</span> <span class="n">FALSE</span><span class="p">,</span> <span class="n">tids</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">hThread</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">QueueUserAPC</span><span class="p">((</span><span class="n">PAPCFUNC</span><span class="p">)</span><span class="n">pThreadProc</span><span class="p">,</span> <span class="n">hThread</span><span class="p">,</span> <span class="p">(</span><span class="n">ULONG_PTR</span><span class="p">)</span><span class="n">pRemoteBuf</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="n">CloseHandle</span><span class="p">(</span><span class="n">hProcess</span><span class="p">);</span>
+
+  <span class="k">return</span> <span class="n">TRUE</span><span class="p">;</span>
+<span class="p">}</span>
+
+
+</code></pre></div></div>
+
+<p>코드는 CreateRemoteThread()를 이용한 방법과 비슷하지만, 대상 프로세스의 스레드를 구하고, 이를 QueueUserAPC()를 통해 호출한다는 점이 다르다.</p>
+
+<blockquote>
+  <p><a href="http://blogs.microsoft.co.il/pavely/2017/03/14/injecting-a-dll-without-a-remote-thread/">참고 URL</a></p>
+</blockquote>
+
+
+  </article>
+<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key=/reversing/2018/05/08/dll-injection data-title=DLL Injection data-url=Your motto//reversing/2018/05/08/dll-injection.html></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"pawpaw"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+</div>
+
+      </div>
+    </div>
+    
+    <footer class="footer">
+  <div id="gotop">^</div>
+  <br>
+	@2015 Pithy Theme by Pawpaw.
+</footer>
+
+    
+  </body>
+
+</html>

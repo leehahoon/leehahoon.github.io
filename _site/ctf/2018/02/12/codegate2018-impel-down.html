@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>    
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width initial-scale=1">
+
+  <title>CODEGATE 2018 Impel_Down Writeup</title>
+  <meta name="description" content="Impel Downnc로 문제에 접속해보면 PyJail이라는 프로그램이 실행된다. 프로그램명처럼 이 프로그램을 벗어나면(?) 문제를 풀 수 있을 것 같다.맨처음에 아무거나 입력했는데 에러 메세지가 출력된다.">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="http://localhost:4000/ctf/2018/02/12/codegate2018-impel-down.html">
+  <link rel="alternate" type="application/atom+xml" title="Jaehoon's BLOG" href="http://localhost:4000/feed.xml" />
+  <script src="/scripts/jquery-1.11.2.min.js"></script>
+  <script src="/scripts/pithy.js"></script>
+</head>
+
+
+  <body>
+    <header class="header">
+	<div class="header-container">
+		<div class="nav">
+			
+				<li>
+					<a href="/index.html">home</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/archive.html">archive</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/category.html">category</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/about.html">about</a>
+				</li>			
+			
+		</div>
+		<div class="description"> Your motto </div>		
+		<ul class="social-links">
+			<li>
+				<a href="https://github.com/leehahoon" title="Github">
+					<img width="19px" height="19px" src="/images/github.png"/>
+				</a>
+			</li>
+			<li>
+				<a href="/feed.xml" title="RSS">
+					<img width="19px" height="19px" src="/images/rss.png"/>
+				</a>
+			</li>
+			<li>
+				<a href="https://twitter.com/jekyllrb" title="Twitter">
+					<img width="19px" height="19px" src="/images/twitter.png"/>
+				</a>
+			</li>
+		</ul>		
+	</div>
+</header>
+
+    <br>
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+  <br>
+  <header class="post-header">
+    <h1 class="post-title">CODEGATE 2018 Impel_Down Writeup</h1>
+    <p class="post-meta">Feb 12, 2018</p>
+  </header>
+
+  <article class="post-content">
+    <h3 id="impel-down">Impel Down</h3>
+<p>nc로 문제에 접속해보면 PyJail이라는 프로그램이 실행된다. 프로그램명처럼 이 프로그램을 벗어나면(?) 문제를 풀 수 있을 것 같다.
+맨처음에 아무거나 입력했는데 에러 메세지가 출력된다.</p>
+
+<pre><code class="language-[day-1]">################## Work List ##################
+  coworker        : Find Coworker For Escape
+  tool            : Find Any Tool
+  dig             : Go Deep~
+  bomb            : make boooooooomb!!!
+###############################################
+dig | a
+Traceback (most recent call last):
+  File "Impel_Down.py", line 140, in &lt;module&gt;
+    result = eval("your."+work+"()")
+  File "&lt;string&gt;", line 1, in &lt;module&gt;
+NameError: name 'a' is not defined
+</code></pre>
+
+<p>eval() 함수에서 에러가 발생했다. 이를 통해 원하는 코드를 실행할 수 있을 거라고 생각했다. 
+여러가지 입력해보니깐 문자열의 입력길이도 제한이 있고 #, +, _ 같은 문자도 필터링한다. 하지만 이름을 입력하는 곳에선 이러한 제약이 없다.
+그래서 이름엔 “__import__(‘os’).system(‘Command’)”, Work List엔 “dig,eval(name),your.dig”와 같은 식으로 입력하면 원하는 코드를 실행할 수 있다.</p>
+
+<blockquote>
+  <p>eval() 함수가 여러 연산을 리턴하는 걸 몰랐었다… (ex. eval(“1+1, 2-1”) ==&gt; (2,1))</p>
+</blockquote>
+
+  </article>
+<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key=/ctf/2018/02/12/codegate2018-impel-down data-title=CODEGATE 2018 Impel_Down Writeup data-url=Your motto//ctf/2018/02/12/codegate2018-impel-down.html></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"pawpaw"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+</div>
+
+      </div>
+    </div>
+    
+    <footer class="footer">
+  <div id="gotop">^</div>
+  <br>
+	@2015 Pithy Theme by Pawpaw.
+</footer>
+
+    
+  </body>
+
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>    
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width initial-scale=1">
+
+  <title>Reversing.kr AutoHotKey1</title>
+  <meta name="description" content="AutoHotkey1문제와 함께 주어지는 readme.txt를 읽어보면 DecryptKey와 EXE’s Key를 찾아야 한다고 나와있다. 그 값들은 md5로 해시화 되어 있다.">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="http://localhost:4000/reversing/2018/02/21/autohotkey1.html">
+  <link rel="alternate" type="application/atom+xml" title="Jaehoon's BLOG" href="http://localhost:4000/feed.xml" />
+  <script src="/scripts/jquery-1.11.2.min.js"></script>
+  <script src="/scripts/pithy.js"></script>
+</head>
+
+
+  <body>
+    <header class="header">
+	<div class="header-container">
+		<div class="nav">
+			
+				<li>
+					<a href="/index.html">home</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/archive.html">archive</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/category.html">category</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/about.html">about</a>
+				</li>			
+			
+		</div>
+		<div class="description"> Your motto </div>		
+		<ul class="social-links">
+			<li>
+				<a href="https://github.com/leehahoon" title="Github">
+					<img width="19px" height="19px" src="/images/github.png"/>
+				</a>
+			</li>
+			<li>
+				<a href="/feed.xml" title="RSS">
+					<img width="19px" height="19px" src="/images/rss.png"/>
+				</a>
+			</li>
+			<li>
+				<a href="https://twitter.com/jekyllrb" title="Twitter">
+					<img width="19px" height="19px" src="/images/twitter.png"/>
+				</a>
+			</li>
+		</ul>		
+	</div>
+</header>
+
+    <br>
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+  <br>
+  <header class="post-header">
+    <h1 class="post-title">Reversing.kr AutoHotKey1</h1>
+    <p class="post-meta">Feb 21, 2018</p>
+  </header>
+
+  <article class="post-content">
+    <h3 id="autohotkey1">AutoHotkey1</h3>
+<p>문제와 함께 주어지는 readme.txt를 읽어보면 DecryptKey와 EXE’s Key를 찾아야 한다고 나와있다. 그 값들은 md5로 해시화 되어 있다.</p>
+
+<p>프로그램을 실행하면 무언가를 입력하는 창이 나온다. 하지만 upx로 패킹되어 있어 언패킹을 한 후, 프로그램을 실행하면 EXE Corrupted라는 문구가 출력된다. (이후, 직접 손으로 OEP를 찾을 생각을 못하고 upx로 언패킹한 바이너리로 삽질했다.)</p>
+
+<p>EXE Corrupted라는 문구가 위치한 주소에 BP를 걸고 계속 실행시켜보면 레지스터에 Key가 2개 모두 출력된다~</p>
+
+  </article>
+<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key=/reversing/2018/02/21/autohotkey1 data-title=Reversing.kr AutoHotKey1 data-url=Your motto//reversing/2018/02/21/autohotkey1.html></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"pawpaw"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+</div>
+
+      </div>
+    </div>
+    
+    <footer class="footer">
+  <div id="gotop">^</div>
+  <br>
+	@2015 Pithy Theme by Pawpaw.
+</footer>
+
+    
+  </body>
+
+</html>

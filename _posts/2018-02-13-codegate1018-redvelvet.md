@@ -13,7 +13,7 @@ Downloads/RedVelvet: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynami
 64비트 리눅스 바이너리다. 프로그램을 구경해보면 알맞은 flag를 입력하면 되는 문제인 것 같다.
 IDA를 통해 디컴파일을 해보면 함수가 참 많다.
 
-{% highlight c %}
+```c
 printf((_BYTE *)&loc_4016CF + 1, argv, envp);
 fgets(&s, 27, edata);
 func1((unsigned int)s, (unsigned int)v13);
@@ -51,7 +51,7 @@ for ( i = 0; i <= 31; ++i )
     exit(1);
   printf("flag : {\" %s \"}\n", &s);
   return 0;
-{% endhighlight %}
+```
 사실 하나씩 분석하면서 문제를 풀어도 됬지만 이걸 풀 당시에 너무 귀찮아서 angr 모듈을 이용해서 풀었다.
 angr를 통해 가고싶은 주소는 func1,2,3 ... 15를 지나 최종적으로 flag가 출력되는 0x401610이다.
 이번에 angr를 처음써보는데 구글에 찾아보니 avoid 주소도 인자로 입력하길래 exit() 함수가 있는 0x401621를 입력했다.

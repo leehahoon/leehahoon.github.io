@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>    
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width initial-scale=1">
+
+  <title>CODEGATE 2018 Redvelvet Writeup</title>
+  <meta name="description" content="RedvelvetDownloads/RedVelvet: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="http://localhost:4000/ctf/2018/02/13/codegate1018-redvelvet.html">
+  <link rel="alternate" type="application/atom+xml" title="Jaehoon's BLOG" href="http://localhost:4000/feed.xml" />
+  <script src="/scripts/jquery-1.11.2.min.js"></script>
+  <script src="/scripts/pithy.js"></script>
+</head>
+
+
+  <body>
+    <header class="header">
+	<div class="header-container">
+		<div class="nav">
+			
+				<li>
+					<a href="/index.html">home</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/archive.html">archive</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/category.html">category</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/about.html">about</a>
+				</li>			
+			
+		</div>
+		<div class="description"> Your motto </div>		
+		<ul class="social-links">
+			<li>
+				<a href="https://github.com/leehahoon" title="Github">
+					<img width="19px" height="19px" src="/images/github.png"/>
+				</a>
+			</li>
+			<li>
+				<a href="/feed.xml" title="RSS">
+					<img width="19px" height="19px" src="/images/rss.png"/>
+				</a>
+			</li>
+			<li>
+				<a href="https://twitter.com/jekyllrb" title="Twitter">
+					<img width="19px" height="19px" src="/images/twitter.png"/>
+				</a>
+			</li>
+		</ul>		
+	</div>
+</header>
+
+    <br>
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+  <br>
+  <header class="post-header">
+    <h1 class="post-title">CODEGATE 2018 Redvelvet Writeup</h1>
+    <p class="post-meta">Feb 13, 2018</p>
+  </header>
+
+  <article class="post-content">
+    <h3 id="redvelvet">Redvelvet</h3>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Downloads/RedVelvet: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked
+</code></pre></div></div>
+
+<p>64비트 리눅스 바이너리다. 프로그램을 구경해보면 알맞은 flag를 입력하면 되는 문제인 것 같다.
+IDA를 통해 디컴파일을 해보면 함수가 참 많다.</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">printf</span><span class="p">((</span><span class="n">_BYTE</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">loc_4016CF</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">argv</span><span class="p">,</span> <span class="n">envp</span><span class="p">);</span>
+<span class="n">fgets</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="mi">27</span><span class="p">,</span> <span class="n">edata</span><span class="p">);</span>
+<span class="n">func1</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">s</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v13</span><span class="p">);</span>
+<span class="n">func2</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v13</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v14</span><span class="p">);</span>
+<span class="n">func3</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v14</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v15</span><span class="p">);</span>
+<span class="n">func4</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v15</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v16</span><span class="p">);</span>
+<span class="n">func5</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v16</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v17</span><span class="p">);</span>
+<span class="n">func6</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v17</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v18</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v19</span><span class="p">);</span>
+<span class="n">func7</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v19</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v20</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v21</span><span class="p">);</span>
+<span class="n">func8</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v21</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v22</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v23</span><span class="p">);</span>
+<span class="n">func9</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v23</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v24</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v25</span><span class="p">);</span>
+<span class="n">v4</span> <span class="o">=</span> <span class="n">ptrace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0LL</span><span class="p">,</span> <span class="mi">1LL</span><span class="p">,</span> <span class="mi">0LL</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span> <span class="n">v4</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">v8</span> <span class="o">=</span> <span class="o">*</span><span class="p">(</span><span class="n">_BYTE</span> <span class="o">*</span><span class="p">)</span><span class="n">v5</span><span class="p">;</span>
+  <span class="n">v9</span> <span class="o">=</span> <span class="n">v3</span> <span class="o">+</span> <span class="o">*</span><span class="p">(</span><span class="n">_BYTE</span> <span class="o">*</span><span class="p">)(</span><span class="n">v5</span> <span class="o">+</span> <span class="mi">111</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="o">*</span><span class="p">(</span><span class="n">_BYTE</span> <span class="o">*</span><span class="p">)(</span><span class="n">v5</span> <span class="o">+</span> <span class="mi">111</span><span class="p">)</span> <span class="o">+=</span> <span class="n">v3</span><span class="p">;</span>
+  <span class="n">JUMPOUT</span><span class="p">(</span><span class="o">!</span><span class="n">v9</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">unk_401746</span><span class="p">);</span>
+  <span class="n">v6C</span> <span class="o">&amp;=</span> <span class="n">BYTE1</span><span class="p">(</span><span class="n">v4</span><span class="p">);</span>
+  <span class="n">JUMPOUT</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">_QWORD</span> <span class="o">*</span><span class="p">)</span><span class="s">"ag : "</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="n">func10</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v25</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v26</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v27</span><span class="p">);</span>
+<span class="n">func11</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v27</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v28</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v29</span><span class="p">);</span>
+<span class="n">func12</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v29</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v30</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v31</span><span class="p">);</span>
+<span class="n">func13</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v31</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v32</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v33</span><span class="p">);</span>
+<span class="n">func14</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v33</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v34</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v35</span><span class="p">);</span>
+<span class="n">func15</span><span class="p">((</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v35</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v36</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="p">)</span><span class="n">v37</span><span class="p">);</span>
+<span class="n">SHA256_Init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">v11</span><span class="p">);</span>
+<span class="n">v6</span> <span class="o">=</span> <span class="n">strlen</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">);</span>
+<span class="n">SHA256_Update</span><span class="p">(</span><span class="o">&amp;</span><span class="n">v11</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s</span><span class="p">,</span> <span class="n">v6</span><span class="p">);</span>
+<span class="n">SHA256_Final</span><span class="p">(</span><span class="n">v38</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">v11</span><span class="p">);</span>
+<span class="k">for</span> <span class="p">(</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="mi">31</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span> <span class="p">)</span>
+  <span class="n">sprintf</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s1</span><span class="p">[</span><span class="mi">2</span> <span class="o">*</span> <span class="n">i</span><span class="p">],</span> <span class="s">"%02x"</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kr">__int8</span><span class="p">)</span><span class="n">v38</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+  <span class="k">if</span> <span class="p">(</span> <span class="n">strcmp</span><span class="p">(</span><span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">)</span> <span class="p">)</span>
+    <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">"flag : {</span><span class="se">\"</span><span class="s"> %s </span><span class="se">\"</span><span class="s">}</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s</span><span class="p">);</span>
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</code></pre></div></div>
+<p>사실 하나씩 분석하면서 문제를 풀어도 됬지만 이걸 풀 당시에 너무 귀찮아서 angr 모듈을 이용해서 풀었다.
+angr를 통해 가고싶은 주소는 func1,2,3 … 15를 지나 최종적으로 flag가 출력되는 0x401610이다.
+이번에 angr를 처음써보는데 구글에 찾아보니 avoid 주소도 인자로 입력하길래 exit() 함수가 있는 0x401621를 입력했다.
+최종적인 페이로드 코드는 다음과 같다.</p>
+
+<ul>
+  <li>payload.py</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">angr</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">angr</span><span class="o">.</span><span class="n">Project</span><span class="p">(</span><span class="s">"RedVelvet"</span><span class="p">,</span> <span class="n">load_options</span><span class="o">=</span><span class="p">{</span><span class="s">'auto_load_libs'</span><span class="p">:</span> <span class="bp">False</span><span class="p">})</span>
+        <span class="n">ex</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">surveyors</span><span class="o">.</span><span class="n">Explorer</span><span class="p">(</span><span class="n">find</span><span class="o">=</span><span class="p">(</span><span class="mh">0x401610</span><span class="p">,</span> <span class="p">),</span> <span class="n">avoid</span><span class="o">=</span><span class="p">(</span><span class="mh">0x401621</span><span class="p">,</span> <span class="mh">0x40162B</span><span class="p">))</span>
+        <span class="n">ex</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">ex</span><span class="o">.</span><span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">posix</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+        <span class="k">print</span> <span class="n">main</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>그럼 조금 깨지긴 하지만 알아볼 수 있을 정도의 flag를 찾을 수 있다~</p>
+
+  </article>
+<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key=/ctf/2018/02/13/codegate1018-redvelvet data-title=CODEGATE 2018 Redvelvet Writeup data-url=Your motto//ctf/2018/02/13/codegate1018-redvelvet.html></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"pawpaw"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+</div>
+
+      </div>
+    </div>
+    
+    <footer class="footer">
+  <div id="gotop">^</div>
+  <br>
+	@2015 Pithy Theme by Pawpaw.
+</footer>
+
+    
+  </body>
+
+</html>

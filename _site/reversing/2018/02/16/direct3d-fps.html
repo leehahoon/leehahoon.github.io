@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>    
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width initial-scale=1">
+
+  <title>Reversing.kr Direct3D-FPS</title>
+  <meta name="description" content="Direct3D-FPS문제를 실행하면 인형을 죽이는 fps 게임이 실행된다. 게임 클리어 시, 출력되는 flag를 살펴보면 알아볼 수 없게 되어있다. 또한 이 flag를 디코딩하는 함수도 존재한다. (함수, 변수명은 임의로 변경)">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="http://localhost:4000/reversing/2018/02/16/direct3d-fps.html">
+  <link rel="alternate" type="application/atom+xml" title="Jaehoon's BLOG" href="http://localhost:4000/feed.xml" />
+  <script src="/scripts/jquery-1.11.2.min.js"></script>
+  <script src="/scripts/pithy.js"></script>
+</head>
+
+
+  <body>
+    <header class="header">
+	<div class="header-container">
+		<div class="nav">
+			
+				<li>
+					<a href="/index.html">home</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/archive.html">archive</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/category.html">category</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/about.html">about</a>
+				</li>			
+			
+		</div>
+		<div class="description"> Your motto </div>		
+		<ul class="social-links">
+			<li>
+				<a href="https://github.com/leehahoon" title="Github">
+					<img width="19px" height="19px" src="/images/github.png"/>
+				</a>
+			</li>
+			<li>
+				<a href="/feed.xml" title="RSS">
+					<img width="19px" height="19px" src="/images/rss.png"/>
+				</a>
+			</li>
+			<li>
+				<a href="https://twitter.com/jekyllrb" title="Twitter">
+					<img width="19px" height="19px" src="/images/twitter.png"/>
+				</a>
+			</li>
+		</ul>		
+	</div>
+</header>
+
+    <br>
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+  <br>
+  <header class="post-header">
+    <h1 class="post-title">Reversing.kr Direct3D-FPS</h1>
+    <p class="post-meta">Feb 16, 2018</p>
+  </header>
+
+  <article class="post-content">
+    <h3 id="direct3d-fps">Direct3D-FPS</h3>
+<p>문제를 실행하면 인형을 죽이는 fps 게임이 실행된다. 게임 클리어 시, 출력되는 flag를 살펴보면 알아볼 수 없게 되어있다. 또한 이 flag를 디코딩하는 함수도 존재한다. (함수, 변수명은 임의로 변경)</p>
+
+<pre><code class="language-assembly">.text:00F23400 flag_decode     proc near          
+.text:00F23400                 push    ecx
+.text:00F23401                 call    sub_F23440
+.text:00F23406                 cmp     eax, 0FFFFFFFFh
+.text:00F23409                 jz      short loc_F2343E
+.text:00F2340B                 mov     ecx, eax
+.text:00F2340D                 imul    ecx, 210h
+.text:00F23413                 mov     edx, dword_1339190[ecx]
+.text:00F23419                 test    edx, edx
+.text:00F2341B                 jg      short loc_F23435
+.text:00F2341D                 mov     dword_1339194[ecx], 0
+.text:00F23427                 mov     cl, byte_1339184[ecx]
+.text:00F2342D                 xor     flag[eax], cl
+.text:00F23433                 pop     ecx
+.text:00F23434                 retn
+</code></pre>
+
+<p>우선 eax에는 인형의 번호가 저장되고, ecx = eax * 0x210 연산을 진행한다. 그리고 byte_0x1339184[ecx]와 flag[eax]랑 xor 연산을 진행해서 디코딩되어 알아볼 수 있는 flag가 출력된다. 그래서 모든 인형을 죽여보면 “Congratuation!, ~~~ …“이 출력되지만 몇 가지 완벽하게 디코딩되지 않는다.</p>
+
+<p>IDA에서 직접 byte_ 1339184[ecx]를 찾아서 flag와 xor 연산을 하면 될 것이라고 생각해서 간단한 코드를 작성했다.</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">flag</span> <span class="o">=</span> <span class="mh">0x1337028</span>
+<span class="n">xor_string</span> <span class="o">=</span> <span class="mh">0x1339184</span>
+<span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">52</span><span class="p">)</span> <span class="c"># flag 글자 수가 총 52글자</span>
+	<span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">chr</span><span class="p">(</span><span class="n">Byte</span><span class="p">(</span><span class="n">flag</span> <span class="o">+</span> <span class="n">i</span><span class="p">)</span> <span class="o">^</span> <span class="n">Byte</span><span class="p">(</span><span class="n">xor_offset</span> <span class="o">+</span> <span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="mh">0x210</span><span class="p">))))</span>
+	<span class="k">print</span> <span class="s">''</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>이렇게 하면 문제를 해결할 수 있다.</p>
+
+<blockquote>
+  <p>IDA에서 WinDBG가 개꿀이다. 그리고 Byte(“주소”)를 하는 것도 이번 기회에 처음 알았다.</p>
+</blockquote>
+
+  </article>
+<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key=/reversing/2018/02/16/direct3d-fps data-title=Reversing.kr Direct3D-FPS data-url=Your motto//reversing/2018/02/16/direct3d-fps.html></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"pawpaw"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+</div>
+
+      </div>
+    </div>
+    
+    <footer class="footer">
+  <div id="gotop">^</div>
+  <br>
+	@2015 Pithy Theme by Pawpaw.
+</footer>
+
+    
+  </body>
+
+</html>

