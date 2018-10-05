@@ -6,10 +6,10 @@ categories: ctf
 ---
 
 ### Impel Down
-nc로 문제에 접속해보면 PyJail이라는 프로그램이 실행된다. 프로그램명처럼 이 프로그램을 벗어나면(?) 문제를 풀 수 있을 것 같다.
+nc로 문제에 접속해보면 `PyJail`이라는 프로그램이 실행된다. 프로그램명처럼 이 프로그램을 벗어나면(?) 문제를 풀 수 있을 것 같다.
 맨처음에 아무거나 입력했는데 에러 메세지가 출력된다.
 
-```[day-1]
+```
 ################## Work List ##################
   coworker        : Find Coworker For Escape
   tool            : Find Any Tool

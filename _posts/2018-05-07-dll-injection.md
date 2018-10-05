@@ -132,13 +132,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 }
 ~~~
 
-![dll_inject1](/img/dll-injection/dll_inject1.png)
-
 #### Registry AppInit_DLLs
 윈도우 운영체제에는 레지스트리라고 불리는 데이터베이스가 존재한다. 이 DB에는 하드웨어, 소프트웨어에 관한 설정, 선택항목뿐만 아니라 사용자 PC에 대한 정보도 들어있다. 이를 사용하기 전에는 구성 설정을 담는데에 INI 파일을 이용했지만 찾기 쉽지 않아서 레지스트리를 도입했다.
 여러 레지스트리 중 DLL Injection에 사용될 키는 AppInit_DLLs 이다. 위치는 "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows\AppInit_DLLs"에 존재한다. 
-
-![dll_inject2](/img/dll-injection/dll_injection2.png)
 
 AppInit_DLLs를 이용한 DLL Injection은 실행되는 모든 프로세스에 레지스트리에 적힌 DLL을 로드하므로 조심해서 사용해야 한다.
 

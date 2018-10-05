@@ -6,8 +6,8 @@
 </description>
     <link>http://localhost:4000/</link>
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Tue, 02 Oct 2018 16:08:52 +0900</pubDate>
-    <lastBuildDate>Tue, 02 Oct 2018 16:08:52 +0900</lastBuildDate>
+    <pubDate>Fri, 05 Oct 2018 14:17:16 +0900</pubDate>
+    <lastBuildDate>Fri, 05 Oct 2018 14:17:16 +0900</lastBuildDate>
     <generator>Jekyll v3.7.2</generator>
     
       <item>
@@ -369,13 +369,9 @@ DLL의 이점은 다음과 같다.&lt;/p&gt;
 &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;&lt;img src=&quot;/img/dll-injection/dll_inject1.png&quot; alt=&quot;dll_inject1&quot; /&gt;&lt;/p&gt;
-
 &lt;h4 id=&quot;registry-appinit_dlls&quot;&gt;Registry AppInit_DLLs&lt;/h4&gt;
 &lt;p&gt;윈도우 운영체제에는 레지스트리라고 불리는 데이터베이스가 존재한다. 이 DB에는 하드웨어, 소프트웨어에 관한 설정, 선택항목뿐만 아니라 사용자 PC에 대한 정보도 들어있다. 이를 사용하기 전에는 구성 설정을 담는데에 INI 파일을 이용했지만 찾기 쉽지 않아서 레지스트리를 도입했다.
 여러 레지스트리 중 DLL Injection에 사용될 키는 AppInit_DLLs 이다. 위치는 “HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows\AppInit_DLLs”에 존재한다.&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;/img/dll-injection/dll_injection2.png&quot; alt=&quot;dll_inject2&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;AppInit_DLLs를 이용한 DLL Injection은 실행되는 모든 프로세스에 레지스트리에 적힌 DLL을 로드하므로 조심해서 사용해야 한다.&lt;/p&gt;
 
@@ -732,7 +728,7 @@ payload = [gets() 주소 8bytes] [pop rdi; ret; 가젯 8byets] [/bin/sh 주소] 
       <item>
         <title>Github pages code highlighting</title>
         <description>&lt;h3 id=&quot;github-pages&quot;&gt;Github Pages&lt;/h3&gt;
-&lt;p&gt;원래 네이버 블로그에서 글을 작성하다가 깃헙 페이지로 옮겨봤는데 괜찮아서 계속 하려고 했다. 근데 마크다운 형식으로 깃헙에 커밋을 했는데 정작 깃헙 블로그에선 code syntax highliting이 적용되지 않은 소스코드가 출력됐다. 처음엔 _config.yml 문제인 줄 알았지만 사용한 jekyll 테마가 코드 하이라이팅을 지원하지 않았다. 그래서 어떻게 이 문제를 해결했는지 내가 사용한 방법을 적으려 한다.&lt;/p&gt;
+&lt;p&gt;원래 네이버 블로그에서 글을 작성하다가 깃헙 페이지로 옮겨봤는데 괜찮아서 계속 하려고 했다. 근데 마크다운 형식으로 깃헙에 커밋을 했는데 정작 깃헙 블로그에선 code syntax highliting이 적용되지 않은 소스코드가 출력됐다. 처음엔 &lt;code class=&quot;highlighter-rouge&quot;&gt;_config.yml&lt;/code&gt; 문제인 줄 알았지만 사용한 jekyll 테마가 코드 하이라이팅을 지원하지 않았다. 그래서 어떻게 이 문제를 해결했는지 내가 사용한 방법을 적으려 한다.&lt;/p&gt;
 
 &lt;ol&gt;
   &lt;li&gt;kramdown, rouge 설치
@@ -753,7 +749,7 @@ rougify style monokai &amp;gt;&amp;gt; assets/main.scss
   &lt;/li&gt;
 &lt;/ol&gt;
 
-&lt;p&gt;나의 경우, “Start Bootstrap - Clean Blog” 테마를 사용했다. 이 테마의 경우 css 파일이 _sass/style.scss 였다. 그리고 assets/main.scss도 관련있을 것 같아서 코드 하이라이팅에 관련된 css 코드를 추가했다. 그 후, markdown 파일에서 ```{code}``` 같은 형식으로 입력하면 Syntax Highlighting이 적용된 결과물을 확인할 수 있다.&lt;/p&gt;
+&lt;p&gt;나의 경우, “Start Bootstrap - Clean Blog” 테마를 사용했다. 이 테마의 경우 css 파일이 &lt;code class=&quot;highlighter-rouge&quot;&gt;_sass/style.scss&lt;/code&gt; 였다. 그리고 &lt;code class=&quot;highlighter-rouge&quot;&gt;assets/main.scss&lt;/code&gt;도 관련있을 것 같아서 코드 하이라이팅에 관련된 css 코드를 추가했다. 그 후, markdown 파일에서 ```{code}``` 같은 형식으로 입력하면 Syntax Highlighting이 적용된 결과물을 확인할 수 있다.&lt;/p&gt;
 
 &lt;blockquote&gt;
   &lt;p&gt;monokai 말고도 rougify help style 를 통해 다양한 코드 하이라이팅 테마를 확인할 수 있습니다.&lt;/p&gt;
@@ -855,10 +851,10 @@ angr를 통해 가고싶은 주소는 func1,2,3 … 15를 지나 최종적으로
       <item>
         <title>CODEGATE 2018 Impel_Down Writeup</title>
         <description>&lt;h3 id=&quot;impel-down&quot;&gt;Impel Down&lt;/h3&gt;
-&lt;p&gt;nc로 문제에 접속해보면 PyJail이라는 프로그램이 실행된다. 프로그램명처럼 이 프로그램을 벗어나면(?) 문제를 풀 수 있을 것 같다.
+&lt;p&gt;nc로 문제에 접속해보면 &lt;code class=&quot;highlighter-rouge&quot;&gt;PyJail&lt;/code&gt;이라는 프로그램이 실행된다. 프로그램명처럼 이 프로그램을 벗어나면(?) 문제를 풀 수 있을 것 같다.
 맨처음에 아무거나 입력했는데 에러 메세지가 출력된다.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&quot;language-[day-1]&quot;&gt;################## Work List ##################
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;################## Work List ##################
   coworker        : Find Coworker For Escape
   tool            : Find Any Tool
   dig             : Go Deep~
@@ -870,7 +866,7 @@ Traceback (most recent call last):
     result = eval(&quot;your.&quot;+work+&quot;()&quot;)
   File &quot;&amp;lt;string&amp;gt;&quot;, line 1, in &amp;lt;module&amp;gt;
 NameError: name 'a' is not defined
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;eval() 함수에서 에러가 발생했다. 이를 통해 원하는 코드를 실행할 수 있을 거라고 생각했다. 
 여러가지 입력해보니깐 문자열의 입력길이도 제한이 있고 #, +, _ 같은 문자도 필터링한다. 하지만 이름을 입력하는 곳에선 이러한 제약이 없다.
